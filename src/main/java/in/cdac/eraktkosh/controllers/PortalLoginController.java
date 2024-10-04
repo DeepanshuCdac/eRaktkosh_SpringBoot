@@ -123,14 +123,6 @@ public class PortalLoginController {
 	public ResponseEntity<Map<String, Object>> validate(@RequestBody String  requestData) {
 		Map<String, Object> response = new HashMap<>();
 
-		// Extract mobileNo, otp, and captcha from the request body (Map)
-		// String mobileNo = requestData.get("mobileNo");
-		
-		System.out.println("Dasdasdasd");
-		//String inputOtp = requestData.get("otp");
-		//String inputCaptcha = requestData.get("captcha");
-		//String mobileNo = requestData.get("mobileno");
-
 		JSONObject jsonObject = new JSONObject(requestData);
 
         // Extract values
