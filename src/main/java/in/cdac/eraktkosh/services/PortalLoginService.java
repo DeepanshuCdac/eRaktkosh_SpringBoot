@@ -11,12 +11,16 @@ import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpSession;
 
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.map.IMap;
 
 //import com.hazelcast.core.HazelcastInstance;
 
@@ -34,7 +38,8 @@ public class PortalLoginService {
 
 	@Autowired
 	HttpSession session;
-	 
+	   @Autowired
+	    private HazelcastInstance hazelcastInstance;
 	  
 	long timeDifference = 0;
 	long fiveMinutesInSeconds = 0;
@@ -49,6 +54,9 @@ public class PortalLoginService {
 //	Map<String, String> captchaCache = hazelcastInstance.getMap("captchaCache");
 	
 	
+	  private static final int OTP_EXPIRATION_TIME = 5; // minutes
+
+	  private static final int CAPTCHA_EXPIRATION_TIME = 5; // minutes
 
 		  
 	public String generateOtp(String mobile_no) throws InvalidKeyException, NoSuchAlgorithmException {
@@ -193,12 +201,8 @@ public class PortalLoginService {
 			finalResponse.put("isUserExists", hasFlag);
 		}
 
-		session.setAttribute("generatedOtp", otp); // Store the OTP
-
-		session.setAttribute("otpExpiry", System.currentTimeMillis() + (60 * 1000)); // OTP expiry time (1 minute)
-		otpStore.put(mobile_no, otp.toString());
-		System.out.println("OTP set in session: " + otp);
-		System.out.println("Session ID when setting OTP: " + session.getId());
+		 IMap<String, String> otpMap = hazelcastInstance.getMap("otpMap");
+	        otpMap.put(mobile_no, otp.toString(), OTP_EXPIRATION_TIME, TimeUnit.MINUTES);
 
 		return finalResponse.toString();
 
@@ -245,6 +249,9 @@ public class PortalLoginService {
 			captchaText.append(captchaChars.charAt(random.nextInt(captchaChars.length())));
 		}
 		//captchaCache.put("ct", captchaText.toString());
+		
+		  IMap<String, String> captchaMap = hazelcastInstance.getMap("captchaMap");
+	        captchaMap.put("RR", captchaText.toString(), CAPTCHA_EXPIRATION_TIME, TimeUnit.MINUTES);
 		return captchaText.toString();
 
 	}
@@ -282,19 +289,13 @@ public class PortalLoginService {
 	}
 
 	public int validate(String otp, String captcha, String mobileno) {
-		
-		/*
-		 * String otpGenerated=captchaCache.get(mobileno); String
-		 * capthcaGenerated=otpCache.get("ct");
-		 * 
-		 * 
-		 * if(otp.equals(otpGenerated) &&captcha.equals(capthcaGenerated) ) {
-		 * 
-		 * 
-		 * return 1;
-		 * 
-		 * }
-		 */
+		  IMap<String, String> otpMap = hazelcastInstance.getMap("otpMap");
+	        String storedOtp = otpMap.get(mobileno);
+	        if(storedOtp != null && storedOtp.equals(otp)){
+	        	
+	        	return 1;
+	        }
+	        
 		return 0;
 
 	}
