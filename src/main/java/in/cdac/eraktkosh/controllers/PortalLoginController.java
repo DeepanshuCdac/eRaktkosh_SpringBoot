@@ -118,30 +118,24 @@ public class PortalLoginController {
 		return new ResponseEntity<>(response, new HttpHeaders(), HttpStatus.OK);
 	}
 
-	// 4. New endpoint for validating OTP and CAPTCHA
-	@PostMapping("/validate")
-	public ResponseEntity<Map<String, Object>> validate(@RequestBody String  requestData) {
-		Map<String, Object> response = new HashMap<>();
-
-		JSONObject jsonObject = new JSONObject(requestData);
-
-        // Extract values
-        String inputOtp = jsonObject.getString("otp");
-        String inputCaptcha = jsonObject.getString("captcha");
-        String mobileNo =  jsonObject.getString("mobile_no");
+		@PostMapping("/validate")
+		public ResponseEntity<String> validate(@RequestBody String  requestData,HttpSession session) {
+			Map<String, Object> response = new HashMap<>();
 		
+			JSONObject jsonObject = new JSONObject(requestData);
 		
-		
-		int isValid=portalLoginService.validate(inputOtp, inputCaptcha, mobileNo);
-
-       
-		
-		if(isValid==1) {
-			return new ResponseEntity<>(response, new HttpHeaders(), HttpStatus.OK);
+		    // Extract values
+		    String inputOtp = jsonObject.getString("otp");
+		    String inputCaptcha = jsonObject.getString("captcha");
+		    String mobileNo =  jsonObject.getString("mobile_no");
 			
+			
+			
+			
+		
+		
+			return portalLoginService.validate(inputOtp, inputCaptcha, mobileNo);
+		
 		}
-		return new ResponseEntity<>(response, new HttpHeaders(), HttpStatus.FORBIDDEN);
 	
-	}
-
 }

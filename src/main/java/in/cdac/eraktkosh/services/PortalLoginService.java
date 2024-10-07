@@ -17,6 +17,8 @@ import javax.servlet.http.HttpSession;
 
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.hazelcast.core.HazelcastInstance;
@@ -288,16 +290,35 @@ public class PortalLoginService {
 
 	}
 
-	public int validate(String otp, String captcha, String mobileno) {
-		  IMap<String, String> otpMap = hazelcastInstance.getMap("otpMap");
-	        String storedOtp = otpMap.get(mobileno);
-	        if(storedOtp != null && storedOtp.equals(otp)){
-	        	
-	        	return 1;
-	        }
-	        
-		return 0;
-
+	public ResponseEntity<String> validate(String otp, String captcha, String mobileno) {
+	    System.out.println(session.getId());
+	    
+	    // Get the OTP and CAPTCHA maps from Hazelcast
+	    IMap<String, String> otpMap = hazelcastInstance.getMap("otpMap");
+	    IMap<String, String> captchaMap = hazelcastInstance.getMap("captchaMap");
+	    
+	    // Retrieve stored OTP and CAPTCHA from Hazelcast
+	    String storedOtp = otpMap.get(mobileno);
+	    String storedCaptcha = captchaMap.get(captcha); // Make sure you use the same key to retrieve the CAPTCHA
+	
+	    // Validate OTP
+	    if (storedOtp == null) {
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("OTP not found for the given mobile number.");
+	    }
+	    if (!storedOtp.equals(otp)) {
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid OTP.");
+	    }
+	
+	    // Validate CAPTCHA
+	    if (storedCaptcha == null) {
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("CAPTCHA not found for the given mobile number.");
+	    }
+	    if (!storedCaptcha.equals(captcha)) {
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid CAPTCHA.");
+	    }
+	
+	    // Both OTP and CAPTCHA are valid
+	    return ResponseEntity.ok("Validation successful. OTP and CAPTCHA are valid.");
 	}
 
 }
